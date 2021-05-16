@@ -15,32 +15,42 @@ int lerp(int x, int y, int a);
 float hash12(vec2 p);
 int jumpFunc(int n);
 
+#define SETTLED_THRESHOLD (0.01 * radius)
+
 void handleNeighbour(ivec2 otherCoord, ivec2 coord, vec2 fcoord, inout bool first, inout float minValue)
 {
     vec4 otherVal = texelFetch(bufferA, otherCoord, 0);
 
 
     float f = otherVal.x;
+    VAL forwardDerivative = VAL(2. * SETTLED_THRESHOLD, 0);
 
     vec3 currentPosition = projMat * vec3(fcoord, f);
 
-    VAL rightDerivative = R(transpose(mat2x3(currentPosition, projMat[0])));
-    VAL upDerivative = R(transpose(mat2x3(currentPosition, projMat[1])));
-    VAL forwardDerivative = R(transpose(mat2x3(currentPosition, projMat[2])));
+    
+        
+    #if 1
+    if(coord != otherCoord)
+    {
+        VAL rightDerivative = R(transpose(mat2x3(currentPosition, projMat[0])));
+        VAL upDerivative = R(transpose(mat2x3(currentPosition, projMat[1])));
+        forwardDerivative = R(transpose(mat2x3(currentPosition, projMat[2])));
 
-    vec2 pixelGradient = vec2(rightDerivative[1], upDerivative[1]);
+        vec2 pixelGradient = vec2(rightDerivative[1], upDerivative[1]);
 
-    // R = 0
-    // dR = 0
-    // dr * dR/dr + du * dR/du + df * dR/df = 0
-    // df = -(dr * dR/dr + du * dR/du) / (dR/df)
-    float df = -dot(pixelGradient, vec2(otherCoord - coord)) / forwardDerivative[1];
+        // R = 0
+        // dR = 0
+        // dr * dR/dr + du * dR/du + df * dR/df = 0
+        // df = -(dr * dR/dr + du * dR/du) / (dR/df)
+        float df = -dot(pixelGradient, vec2(otherCoord - coord)) / forwardDerivative[1];
 
-    f += df;
+        f += df;
+    }
+    #endif
 
     // Newton's method iterations.
     // Do more iterations when 'other' is blue.
-    for(int i = 0; i < 2; i++)  // TODO: && forwardDerivative[0] > 0.01
+    for(int i = 0; i < 40 && abs(forwardDerivative[0]) > SETTLED_THRESHOLD; i++)
     {
         forwardDerivative = R(transpose(mat2x3(projMat * vec3(fcoord, f), projMat[2])));
 
@@ -54,12 +64,12 @@ void handleNeighbour(ivec2 otherCoord, ivec2 coord, vec2 fcoord, inout bool firs
 
 
     float absR = abs(forwardDerivative[0]);
-    bool settled = absR < 0.1;
+    bool settled = absR < SETTLED_THRESHOLD;
 
     if(first || settled || !IS_SETTLED(fragColor))
     {
         float valueToMinimize = 0.;
-        if(settled)
+        if(settled || true)
         {
             float forwardDir = dot(projMat[2], currentPosition);
             valueToMinimize = forwardDir;
@@ -105,18 +115,19 @@ void main( void )
     float minValue = 0.;
 
 
-    fragColor.w = 0.;
+    fragColor = AS(fragColor, UNSETTLED);
 
     // Run once for otherCoord = coord
     handleNeighbour(coord, coord, fcoord, first, minValue);
 
-    for(int n = 0; n <= 3; n++)
+    for(int n = 0; n < 3; n++)
+    // int n = (frame + coord.x + coord.y) % 2;
     {
-        int jf = jumpFunc(n);
+        int jf = 1 + n;
 
         #ifdef DISABLE_STOCHASTIC
         {
-            for(int i = 1; i < 8; i += 2 /* variable (1, 2) */)
+            for(int i = 1; i < 8; i += 1 /* variable (1, 2) */)
             {
                 ivec2 otherCoord = coord + jf * relSquare(i);
 
@@ -129,7 +140,7 @@ void main( void )
         // else
         #else
         {
-            int i = 1 + 2 * (int(100. * hash12(vec2(2 * frame + START_N, coord.x + resolution.x * coord.y) / 100.)) % 4);
+            int i = 1 + 2 * (int(100. * hash12(vec2(2 * frame + 1, coord.x + resolution.x * coord.y) / 100.)) % 4);
             // int i = 1 + 2 * (((3 * frame + START_N) + coord.x + resolution.x * coord.y) % 4);
             {
                 ivec2 otherCoord = coord + jf * relSquare(i);
@@ -137,7 +148,7 @@ void main( void )
                 if(any(lessThan(otherCoord, ivec2(0))) || any(greaterThanEqual(otherCoord, resolution))) continue;
 
 
-                handleNeighbour(otherCoord, fcoord, first, minValue);
+                handleNeighbour(otherCoord, coord, fcoord, first, minValue);
             }
         }
         #endif

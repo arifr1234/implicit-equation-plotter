@@ -229,7 +229,7 @@ gl.canvas.addEventListener('dblclick', e =>
 
 // zoom
 
-let radius = 5.15;  // 2;
+let radius = 3;  // 2;
 
 gl.canvas.addEventListener("wheel", e => 
 {
@@ -289,7 +289,7 @@ function getAxesUniforms(rotation, radius)
 
     // projMat = projMat.map(d => d / projScale);
 
-    return { /* axes: axes,*/ projMat: projMat, projScale: projScale};
+    return {projMat: projMat, radius: radius};
 }
 
 

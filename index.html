@@ -223,7 +223,7 @@ VAL seifertR(VAL2 z, VAL2 w)
     
     VAL2 sum = dc_mul(dc_mul(z, z), z) + dc_mul(dc_mul(dc_mul(w, w), w), w);
     
-        float theta = (0.5 * cos(0.3*time) + 1.) * 3.14;
+        float theta = (0.5 * cos(time) + 1.) * 3.14;
         VAL2 target = VAL2(c(cos(theta)), c(sin(theta)));
     
     return dc_absSq(div(sum, d_sqrt(dc_absSq(sum))) - target);

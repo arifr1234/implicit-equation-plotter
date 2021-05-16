@@ -9,8 +9,8 @@ uniform highp ivec2 resolution;
 uniform sampler2D bufferA;
 
 
-// uniform mat3x3 axes;
 uniform mat3x3 projMat;
+uniform float radius;
 
 
 int sqi(ivec2 v) { return v.x*v.x + v.y*v.y; }
