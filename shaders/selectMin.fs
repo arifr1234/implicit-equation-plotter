@@ -25,7 +25,7 @@ void main( void )
 
                 if(IS_SETTLED(otherVal) && (!IS_SETTLED(fragColor) || otherVal.x < fragColor.x))
                 {
-                    fragColor = otherVal + vec4(-0.05, 0, 0, 0);
+                    fragColor = otherVal + vec4(-0.01, 0, 0, 0);
                 }
             }
         }

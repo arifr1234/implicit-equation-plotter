@@ -169,7 +169,7 @@ class ImplicitSurface
             }, getAxesUniforms(rotation, radius));
 
             
-            for (let i = 0; i < 1; i++)
+            for (let i = 0; i < 2; i++)
              {
                 draw(this.bufferAProgramInfo, this.bufferAOutFbi, this.bufferAInFbi, uniforms);
                 [this.bufferAInFbi, this.bufferAOutFbi] = [this.bufferAOutFbi, this.bufferAInFbi]; 
@@ -177,6 +177,9 @@ class ImplicitSurface
                 draw(this.selectMinProgramInfo, this.bufferAOutFbi, this.bufferAInFbi, uniforms);
                 [this.bufferAInFbi, this.bufferAOutFbi] = [this.bufferAOutFbi, this.bufferAInFbi];    
             }
+
+            // draw(this.bufferAProgramInfo, this.bufferAOutFbi, this.bufferAInFbi, uniforms);
+            // [this.bufferAInFbi, this.bufferAOutFbi] = [this.bufferAOutFbi, this.bufferAInFbi]; 
             
             draw(this.imageProgramInfo, null, this.bufferAInFbi, uniforms);
 

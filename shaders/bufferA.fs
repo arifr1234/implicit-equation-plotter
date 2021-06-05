@@ -15,7 +15,7 @@ int lerp(int x, int y, int a);
 float hash12(vec2 p);
 int jumpFunc(int n);
 
-#define SETTLED_THRESHOLD (0.00001 * radius)
+#define SETTLED_THRESHOLD (0.000001 * radius)
 
 // float f_delta(ivec2 origin, ivec2 target)
 // {
