@@ -38,10 +38,11 @@ const attachments = [
 let commonFs = null;
 let imageFs = null;
 let bufferAFs = null;
+let selectMinFs = null;
 
-const loadShaders = Promise.all([getShader(String.raw`shaders\common.fs`), getShader(String.raw`shaders\image.fs`), getShader(String.raw`shaders\bufferA.fs`)])
+const loadShaders = Promise.all([getShader(String.raw`shaders\common.fs`), getShader(String.raw`shaders\image.fs`), getShader(String.raw`shaders\bufferA.fs`), getShader(String.raw`shaders\selectMin.fs`)])
 .then(values => {
-    [commonFs, imageFs, bufferAFs] = values;
+    [commonFs, imageFs, bufferAFs, selectMinFs] = values;
 });
 
 const GlslErrors = document.getElementById("GlslErrors");
@@ -56,6 +57,7 @@ class ImplicitSurface
         {
             gl.deleteProgram(this.imageProgramInfo.program);
             gl.deleteProgram(this.bufferAProgramInfo.program);
+            gl.deleteProgram(this.selectMinProgramInfo.program);
 
             [this.bufferAInFbi, this.bufferAOutFbi]
             .forEach(function(fbi)
@@ -104,7 +106,7 @@ class ImplicitSurface
         if(this.bufferAProgramInfo == null) return;
 
         this.imageProgramInfo = twgl.createProgramInfo(gl, ["vs", concat(currentCommon, imageFs)]);
-
+        this.selectMinProgramInfo = twgl.createProgramInfo(gl, ["vs", concat(currentCommon, selectMinFs)]);
 
 
         this.bufferAInFbi = twgl.createFramebufferInfo(gl, attachments);
@@ -124,13 +126,13 @@ class ImplicitSurface
         }
 
 
-        function draw(programInfo, frameBufferInfo, uniforms)
+        function draw(withProgramInfo, toFrameBufferInfo, fromFrameBufferInfo, uniforms)
         {
-            twgl.bindFramebufferInfo(gl, frameBufferInfo);
+            twgl.bindFramebufferInfo(gl, toFrameBufferInfo);
 
-            gl.useProgram(programInfo.program);
-            twgl.setBuffersAndAttributes(gl, programInfo, vertexBufferInfo);
-            twgl.setUniforms(programInfo, uniforms);
+            gl.useProgram(withProgramInfo.program);
+            twgl.setBuffersAndAttributes(gl, withProgramInfo, vertexBufferInfo);
+            twgl.setUniforms(withProgramInfo, Object.assign({}, uniforms, { bufferA: fromFrameBufferInfo.attachments[0] }));
             twgl.drawBufferInfo(gl, vertexBufferInfo);
         }
 
@@ -163,14 +165,20 @@ class ImplicitSurface
                 time: time,
                 resolution: [gl.canvas.width, gl.canvas.height],
                 frame: frame,
-                bufferA: this.bufferAInFbi.attachments[0],
+                // bufferA: this.bufferAInFbi.attachments[0],
             }, getAxesUniforms(rotation, radius));
 
-            draw(this.imageProgramInfo, null, uniforms);
+            
+            for (let i = 0; i < 1; i++)
+             {
+                draw(this.bufferAProgramInfo, this.bufferAOutFbi, this.bufferAInFbi, uniforms);
+                [this.bufferAInFbi, this.bufferAOutFbi] = [this.bufferAOutFbi, this.bufferAInFbi]; 
 
-            draw(this.bufferAProgramInfo, this.bufferAOutFbi, uniforms);
-
-            [this.bufferAInFbi, this.bufferAOutFbi] = [this.bufferAOutFbi, this.bufferAInFbi];            
+                draw(this.selectMinProgramInfo, this.bufferAOutFbi, this.bufferAInFbi, uniforms);
+                [this.bufferAInFbi, this.bufferAOutFbi] = [this.bufferAOutFbi, this.bufferAInFbi];    
+            }
+            
+            draw(this.imageProgramInfo, null, this.bufferAInFbi, uniforms);
 
 
             frame++;

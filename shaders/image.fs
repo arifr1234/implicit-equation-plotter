@@ -18,7 +18,7 @@ void main( void )
 
     if(!IS_SETTLED(val))
     {
-        fragColor = vec4(0);
+        fragColor = vec4(0);  // vec4(0.5 * val.xyw + 0.5, 1);  // vec4(0);
         return;
     }
 

@@ -15,86 +15,129 @@ int lerp(int x, int y, int a);
 float hash12(vec2 p);
 int jumpFunc(int n);
 
-#define SETTLED_THRESHOLD (0.01 * radius)
+#define SETTLED_THRESHOLD (0.00001 * radius)
 
-void handleNeighbour(ivec2 otherCoord, ivec2 coord, vec2 fcoord, inout bool first, inout float minValue)
-{
-    vec4 otherVal = texelFetch(bufferA, otherCoord, 0);
+// float f_delta(ivec2 origin, ivec2 target)
+// {
+//     vec3 currentPosition = projMat * vec3(fcoord, f);
+
+//     VAL rightDerivative = R(transpose(mat2x3(currentPosition, projMat[0])));
+//     VAL upDerivative = R(transpose(mat2x3(currentPosition, projMat[1])));
+//     VAL forwardDerivative = R(transpose(mat2x3(currentPosition, projMat[2])));
+
+//     vec2 pixelGradient = vec2(rightDerivative[1], upDerivative[1]);
+
+//     // R = 0
+//     // dR = 0
+//     // dr * dR/dr + du * dR/du + df * dR/df = 0
+//     // df = -(dr * dR/dr + du * dR/du) / (dR/df)
+//     float df = -dot(pixelGradient, vec2(otherCoord - coord)) / forwardDerivative[1];
+
+//     return df;
+// }
+
+// void handleNeighbour(ivec2 otherCoord, ivec2 coord, vec2 fcoord, inout bool first, inout float minValue)
+// {
+//     vec4 otherVal = texelFetch(bufferA, otherCoord, 0);
 
 
-    float f = otherVal.x;
-    VAL forwardDerivative = VAL(2. * SETTLED_THRESHOLD, 0);
+//     float f = otherVal.x;
+//     VAL forwardDerivative = VAL(2. * SETTLED_THRESHOLD, 0);
 
-    vec3 currentPosition = projMat * vec3(fcoord, f);
+//     vec3 currentPosition = projMat * vec3(fcoord, f);
 
     
         
-    #if 1
-    if(coord != otherCoord)
-    {
-        VAL rightDerivative = R(transpose(mat2x3(currentPosition, projMat[0])));
-        VAL upDerivative = R(transpose(mat2x3(currentPosition, projMat[1])));
-        forwardDerivative = R(transpose(mat2x3(currentPosition, projMat[2])));
-
-        vec2 pixelGradient = vec2(rightDerivative[1], upDerivative[1]);
-
-        // R = 0
-        // dR = 0
-        // dr * dR/dr + du * dR/du + df * dR/df = 0
-        // df = -(dr * dR/dr + du * dR/du) / (dR/df)
-        float df = -dot(pixelGradient, vec2(otherCoord - coord)) / forwardDerivative[1];
-
-        f += df;
-    }
-    #endif
-
-    // Newton's method iterations.
-    // Do more iterations when 'other' is blue.
-    for(int i = 0; i < 40 && abs(forwardDerivative[0]) > SETTLED_THRESHOLD; i++)
-    {
-        forwardDerivative = R(transpose(mat2x3(projMat * vec3(fcoord, f), projMat[2])));
-
-        f = f - forwardDerivative[0] / forwardDerivative[1];
-    }
-
-    if(isnan(f)) return;
-
-    currentPosition = projMat * vec3(fcoord, f);
-    forwardDerivative = R(transpose(mat2x3(currentPosition, projMat[2])));
-
-
-    float absR = abs(forwardDerivative[0]);
-    bool settled = absR < SETTLED_THRESHOLD;
-
-    if(first || settled || !IS_SETTLED(fragColor))
-    {
-        float valueToMinimize = 0.;
-        if(settled || true)
-        {
-            float forwardDir = dot(projMat[2], currentPosition);
-            valueToMinimize = forwardDir;
-
-            if(!IS_SETTLED(fragColor))
-            {
-                first = true;
-            }
-        }
-        else
-        {
-            valueToMinimize = absR;
-        }
+//     #if 1
+//     if(coord != otherCoord)
+//     {
         
-        if(first || valueToMinimize < minValue)
-        {
-            fragColor.x = f;
-            fragColor = AS(fragColor, settled ? SETTLED : UNSETTLED);
+//     }
+//     #endif
 
-            first = false;
-            minValue = valueToMinimize;
-        }
+    
+
+//     if(isnan(f)) return;
+
+//     currentPosition = projMat * vec3(fcoord, f);
+//     forwardDerivative = R(transpose(mat2x3(currentPosition, projMat[2])));
+
+
+//     float absR = abs(forwardDerivative[0]);
+//     bool settled = absR < SETTLED_THRESHOLD;
+
+//     if(first || settled || !IS_SETTLED(fragColor))
+//     {
+//         float valueToMinimize = 0.;
+//         if(settled || true)
+//         {
+//             float forwardDir = dot(projMat[2], currentPosition);
+//             valueToMinimize = forwardDir;
+
+//             if(!IS_SETTLED(fragColor))
+//             {
+//                 first = true;
+//             }
+//         }
+//         else
+//         {
+//             valueToMinimize = absR;
+//         }
+        
+//         if(first || valueToMinimize < minValue)
+//         {
+//             fragColor.x = f;
+//             fragColor = AS(fragColor, settled ? SETTLED : UNSETTLED);
+
+//             first = false;
+//             minValue = valueToMinimize;
+//         }
+//     }
+//     // return zeroDet;
+// }
+
+vec4 newton_method(vec2 fcoord, vec4 value)
+{
+    float f = value.x;
+
+    VAL forwardDerivative = VAL(0., 1.);
+
+    // // Newton's method iterations.
+    // for(int i = 0; i < 40 && abs(forwardDerivative[0]) > SETTLED_THRESHOLD; i++)
+    // {
+    //     forwardDerivative = R(transpose(mat2x3(projMat * vec3(fcoord, f), projMat[2])));
+
+    //     f = f - forwardDerivative[0] / forwardDerivative[1];
+    // }
+
+    int i = 0;
+    do 
+    {
+        float df = - forwardDerivative[0] / forwardDerivative[1];
+
+        if(isnan(df) || isinf(df)) break;
+
+        f = f + df;
+
+        VAL newForwardDerivative = R(transpose(mat2x3(projMat * vec3(fcoord, f), projMat[2])));
+
+        if(any(isnan(newForwardDerivative)) || any(isinf(newForwardDerivative))) break;
+
+        forwardDerivative = newForwardDerivative;
+
+        i++;
+    } while(i < 40 && abs(forwardDerivative[0]) > SETTLED_THRESHOLD);
+
+    int setteled = UNSETTLED;
+    if(abs(forwardDerivative[0]) < SETTLED_THRESHOLD)
+    {
+        setteled = SETTLED;
     }
-    // return zeroDet;
+
+    return AS(vec3(f, 0, 0), setteled);
 }
+
+const float initF = 0.1;
 
 void main( void )
 {    
@@ -102,57 +145,97 @@ void main( void )
     ivec2 coord = ivec2(gl_FragCoord.xy);
 
 
+    // Get state:
+
     if(frame == 0)
     {
-        const float initF = 0.;
-
         fragColor = vec4(initF, 0, 0, UNSETTLED);
-
-        return;
     }
-
-    bool first = true;
-    float minValue = 0.;
-
-
-    fragColor = AS(fragColor, UNSETTLED);
-
-    // Run once for otherCoord = coord
-    handleNeighbour(coord, coord, fcoord, first, minValue);
-
-    for(int n = 0; n < 3; n++)
-    // int n = (frame + coord.x + coord.y) % 2;
+    else
     {
-        int jf = 1 + n;
+        fragColor = texelFetch(bufferA, coord, 0);
 
-        #ifdef DISABLE_STOCHASTIC
-        {
-            for(int i = 1; i < 8; i += 1 /* variable (1, 2) */)
-            {
-                ivec2 otherCoord = coord + jf * relSquare(i);
+        // for(int x = max(0, coord.x - 1); x <= min(resolution.x - 1, coord.x + 1); x++)
+        // {
+        //     for(int y = max(0, coord.y - 1); y <= min(resolution.y - 1, coord.y + 1); y++)
+        //     {
+        //         vec4 otherVal = texelFetch(bufferA, ivec2(x, y), 0);
 
-                if(any(lessThan(otherCoord, ivec2(0))) || any(greaterThanEqual(otherCoord, resolution))) continue;
+        //         if(IS_SETTLED(otherVal) && (!IS_SETTLED(fragColor) || otherVal.x < fragColor.x))
+        //         {
+        //             fragColor = otherVal;
+        //         }
+        //     }
+        // }
 
-
-                handleNeighbour(otherCoord, coord, fcoord, first, minValue);
-            }
-        }
-        // else
-        #else
-        {
-            int i = 1 + 2 * (int(100. * hash12(vec2(2 * frame + 1, coord.x + resolution.x * coord.y) / 100.)) % 4);
-            // int i = 1 + 2 * (((3 * frame + START_N) + coord.x + resolution.x * coord.y) % 4);
-            {
-                ivec2 otherCoord = coord + jf * relSquare(i);
-
-                if(any(lessThan(otherCoord, ivec2(0))) || any(greaterThanEqual(otherCoord, resolution))) continue;
-
-
-                handleNeighbour(otherCoord, coord, fcoord, first, minValue);
-            }
-        }
-        #endif
+        // if(!IS_SETTLED(fragColor))
+        // {
+        //     fragColor.x = initF;
+        // }
     }
+
+
+    // Optimize:
+
+    VAL forwardDerivative = vec2(SETTLED_THRESHOLD + 1., 0);
+
+    for(int i = 0; i < 10; i++)
+    {
+        forwardDerivative = R(transpose(mat2x3(projMat * vec3(fcoord, fragColor.x), projMat[2])));
+
+        if(abs(forwardDerivative[0]) < SETTLED_THRESHOLD)
+        {
+            break;
+        }
+
+        float df = - forwardDerivative[0] / forwardDerivative[1];
+
+        fragColor.x += df;
+    }
+
+
+    // Set settled:
+
+    if(abs(forwardDerivative[0]) < SETTLED_THRESHOLD)
+    {
+        fragColor = AS(fragColor, SETTLED);
+    }
+    else{
+        fragColor = AS(fragColor, UNSETTLED);
+    }
+
+
+    // fragColor.x = newVal.x;
+
+
+
+    // float minf = fragColor.x;
+    // ivec2 minCoord = coord;
+
+    // // int n = (frame + coord.x + coord.y) % 2;
+    // for(int n = 0; n < 3; n++)
+    // {
+    //     int jf = jumpFunc(1 + n);
+    //     for(int i = 1; i < 8; i += 2 /* variable (1, 2) */)
+    //     {
+    //         ivec2 otherCoord = coord + jf * relSquare(i);
+
+    //         if(any(lessThan(otherCoord, ivec2(0))) || any(greaterThanEqual(otherCoord, resolution))) continue;
+
+    //         vec4 otherValue = texelFetch(bufferA, otherCoord, 0);
+    //         if(otherValue.x < minf)
+    //         {
+    //             minf = otherValue.x;
+    //             minCoord = otherCoord;
+    //         }
+    //     }
+    // }
+
+    // float f = newton_method(fcoord, minf);
+    // if(!isnan(f) && f < fragColor.x)
+    // {
+    //     fragColor.x = f;
+    // }
 }
 
 

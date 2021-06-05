@@ -70,7 +70,7 @@
                         </select>
                         <div>
                             <span style="float: left;">background color: </span>
-                            <input type="color" value="#FFFFFF" id="backgroundColorInput">
+                            <input type="color" value="#00FFFF" id="backgroundColorInput">
                         </div>
                         <button id="helpButton">Help</button>
                         <a href="https://github.com/arifr1234/implicit-equation-plotter" target="_blank">GitHub</a>
@@ -183,7 +183,9 @@ VAL d_sinh(VAL a) { return VAL(sinh(a.x), a.yz * cosh(a.x)); }
 
                 const canvasContainer = document.getElementById("canvasContainer");
 
-                document.getElementById("backgroundColorInput").addEventListener("change", e => {
+                const backgroundColorInput = document.getElementById("backgroundColorInput");
+                canvasContainer.style.backgroundColor = backgroundColorInput.value;
+                backgroundColorInput.addEventListener("change", e => {
                     canvasContainer.style.backgroundColor = e.target.value;
                 });
             </script>

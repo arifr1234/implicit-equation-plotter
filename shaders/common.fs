@@ -234,6 +234,7 @@ VAL2 dc_recip(VAL2 z) { return dcr_div(dc_conj(z), dc_absSq(z)); }
 
 #define UNSETTLED 0
 #define SETTLED 1
+#define ERROR 2
 
 #define IS_SETTLED(val) (int(round(val.w)) == SETTLED)
 #define AS(val, m) vec4(val.xyz, m)
