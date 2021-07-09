@@ -215,6 +215,26 @@ VAL d_sinh(VAL a) { return VAL(sinh(a.x), a.yz * cosh(a.x)); }
 
 #define DISABLE_STOCHASTIC
 
+VAL dc_atan2(VAL2 v)
+{
+    return VAL(atan(v[1].x, v[0].x), determinant(v) / dc_absSq(v));
+}
+
+VAL2 dc_pow(VAL2 z, float p)
+{
+    VAL angle = dc_atan2(z);
+    VAL r = d_sqrt(dc_absSq(z));
+    
+    angle = p * angle;
+    
+    return mul(d_exp(d_log(r) * p), VAL2(d_cos(angle), d_sin(angle)));
+}
+
+VAL2 dc_exp(VAL2 z)
+{
+    return mul(d_exp(z[0]), VAL2(d_cos(z[1]), d_sin(z[1])));
+}
+
 VAL seifertR(VAL2 z, VAL2 w)
 {
     // arg(z) = -i * ln(z / |z|)
@@ -223,10 +243,10 @@ VAL seifertR(VAL2 z, VAL2 w)
     // ln(z / |z|) = ic
     // z / |z| = e^(ic)
     
-    VAL2 sum = dc_mul(dc_mul(z, z), z) + dc_mul(dc_mul(dc_mul(w, w), w), w);
+    VAL2 sum = dc_pow(z, 4.) + dc_pow(w, 5.);
     
-        float theta = (0.5 * cos(time) + 1.) * 3.14;
-        VAL2 target = VAL2(c(cos(theta)), c(sin(theta)));
+    float theta = (0.7 * 0.5 * cos(time) + 1.) * 3.14;
+    VAL2 target = VAL2(c(cos(theta)), c(sin(theta)));
     
     return dc_absSq(div(sum, d_sqrt(dc_absSq(sum))) - target);
 }
@@ -237,8 +257,8 @@ VAL R(VAL3 s)  // == 0
     VAL denom = sqS + c(1);
     
     return seifertR(VAL2(div(sqS - c(1), denom), div(2.*s[0], denom)), VAL2(div(2.*s[1], denom), div(2.*s[2], denom)));
-}
-    
+}    
+
 </script>
 <script type="x-shader/fragment" id="sphere" data-name="Sphere">
 #define DISABLE_STOCHASTIC
